@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Download, Save, FileDown, Share2, Palette, Grid, BarChart3 } from "lucide-react";
+import { Download, Save, FileDown, Share2, Palette, Grid, BarChart3, Monitor } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface SettingsPanelProps {
@@ -21,6 +20,306 @@ export function SettingsPanel({ data, onClose }: SettingsPanelProps) {
   const [showGrid, setShowGrid] = useState(true);
   const [showLegend, setShowLegend] = useState(true);
   const [exportFormat, setExportFormat] = useState("json");
+
+  const generateStandaloneDashboard = () => {
+    if (!data) {
+      toast({
+        title: "No Data",
+        description: "Please upload data first before saving dashboard.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const dashboardHTML = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard - ${new Date().toLocaleDateString()}</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .header h1 { color: #1e293b; margin-bottom: 8px; }
+        .header p { color: #64748b; }
+        .grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+            gap: 20px; 
+            margin-bottom: 20px;
+        }
+        .chart-card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .chart-card h3 { margin-bottom: 15px; color: #1e293b; }
+        .kpi-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); 
+            gap: 15px; 
+            margin-bottom: 20px;
+        }
+        .kpi-card { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 8px; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .kpi-value { font-size: 2em; font-weight: bold; color: #3b82f6; }
+        .kpi-label { color: #64748b; margin-top: 5px; }
+        .data-table { 
+            background: white; 
+            border-radius: 8px; 
+            overflow: hidden; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .data-table table { width: 100%; border-collapse: collapse; }
+        .data-table th { 
+            background: #f1f5f9; 
+            padding: 12px; 
+            text-align: left; 
+            font-weight: 600; 
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .data-table td { padding: 12px; border-bottom: 1px solid #e2e8f0; }
+        .footer { 
+            text-align: center; 
+            margin-top: 40px; 
+            padding: 20px; 
+            color: #64748b; 
+            border-top: 1px solid #e2e8f0;
+        }
+        @media (max-width: 768px) {
+            .container { padding: 10px; }
+            .grid { grid-template-columns: 1fr; }
+            .kpi-grid { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Analytics Dashboard</h1>
+            <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</p>
+            <p>Total Records: ${Array.isArray(data) ? data.length : 'N/A'}</p>
+        </div>
+
+        <div class="kpi-grid">
+            <div class="kpi-card">
+                <div class="kpi-value">${Array.isArray(data) ? data.length : 0}</div>
+                <div class="kpi-label">Total Records</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value">${Array.isArray(data) && data.length > 0 ? Object.keys(data[0]).length : 0}</div>
+                <div class="kpi-label">Data Fields</div>
+            </div>
+            <div class="kpi-card">
+                <div class="kpi-value">${new Date().toLocaleDateString()}</div>
+                <div class="kpi-label">Report Date</div>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="chart-card">
+                <h3>Bar Chart</h3>
+                <canvas id="barChart" width="400" height="200"></canvas>
+            </div>
+            
+            <div class="chart-card">
+                <h3>Line Chart</h3>
+                <canvas id="lineChart" width="400" height="200"></canvas>
+            </div>
+            
+            <div class="chart-card">
+                <h3>Pie Chart</h3>
+                <canvas id="pieChart" width="400" height="200"></canvas>
+            </div>
+            
+            <div class="chart-card">
+                <h3>Doughnut Chart</h3>
+                <canvas id="doughnutChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+
+        <div class="data-table">
+            <h3 style="padding: 20px; margin: 0; background: #f8fafc; border-bottom: 1px solid #e2e8f0;">Data Table</h3>
+            <table id="dataTable">
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p>Dashboard generated by Analytics Platform</p>
+            <p>This file can be opened on any device with a web browser</p>
+        </div>
+    </div>
+
+    <script>
+        const data = ${JSON.stringify(data)};
+        
+        // Prepare chart data
+        const chartData = Array.isArray(data) ? data.slice(0, 10) : [];
+        const labels = chartData.map((item, index) => item.name || item.label || \`Item \${index + 1}\`);
+        const values = chartData.map(item => {
+            const numericValue = parseFloat(item.value || item.amount || item.count || Math.random() * 100);
+            return isNaN(numericValue) ? Math.random() * 100 : numericValue;
+        });
+
+        const colors = [
+            '#3b82f6', '#ef4444', '#10b981', '#f59e0b', '#8b5cf6',
+            '#06b6d4', '#84cc16', '#f97316', '#ec4899', '#6366f1'
+        ];
+
+        // Bar Chart
+        new Chart(document.getElementById('barChart'), {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Values',
+                    data: values,
+                    backgroundColor: colors,
+                    borderColor: colors.map(color => color + '80'),
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: ${showLegend} } },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: ${showGrid} } },
+                    x: { grid: { display: ${showGrid} } }
+                }
+            }
+        });
+
+        // Line Chart
+        new Chart(document.getElementById('lineChart'), {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Trend',
+                    data: values,
+                    borderColor: '#3b82f6',
+                    backgroundColor: '#3b82f620',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: ${showLegend} } },
+                scales: {
+                    y: { beginAtZero: true, grid: { display: ${showGrid} } },
+                    x: { grid: { display: ${showGrid} } }
+                }
+            }
+        });
+
+        // Pie Chart
+        new Chart(document.getElementById('pieChart'), {
+            type: 'pie',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: ${showLegend}, position: 'bottom' } }
+            }
+        });
+
+        // Doughnut Chart
+        new Chart(document.getElementById('doughnutChart'), {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: ${showLegend}, position: 'bottom' } }
+            }
+        });
+
+        // Data Table
+        if (Array.isArray(data) && data.length > 0) {
+            const headers = Object.keys(data[0]);
+            const thead = document.getElementById('tableHead');
+            const tbody = document.getElementById('tableBody');
+
+            // Create header
+            const headerRow = thead.insertRow();
+            headers.forEach(header => {
+                const th = document.createElement('th');
+                th.textContent = header;
+                headerRow.appendChild(th);
+            });
+
+            // Create rows (limit to first 50 for performance)
+            data.slice(0, 50).forEach(row => {
+                const tr = tbody.insertRow();
+                headers.forEach(header => {
+                    const td = tr.insertCell();
+                    td.textContent = row[header] || '';
+                });
+            });
+
+            if (data.length > 50) {
+                const tr = tbody.insertRow();
+                const td = tr.insertCell();
+                td.colSpan = headers.length;
+                td.textContent = \`... and \${data.length - 50} more rows\`;
+                td.style.textAlign = 'center';
+                td.style.fontStyle = 'italic';
+                td.style.color = '#64748b';
+            }
+        }
+    </script>
+</body>
+</html>`;
+
+    const blob = new Blob([dashboardHTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `analytics-dashboard-${Date.now()}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Dashboard Saved",
+      description: "Standalone HTML dashboard saved successfully. Open it on any device!",
+    });
+  };
 
   const handleSaveProject = () => {
     const projectData = {
@@ -158,9 +457,14 @@ export function SettingsPanel({ data, onClose }: SettingsPanelProps) {
           <CardDescription>Save your project and export data</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <Button onClick={handleSaveProject} className="w-full" variant="default">
+          <Button onClick={generateStandaloneDashboard} className="w-full" variant="default">
+            <Monitor className="h-4 w-4 mr-2" />
+            Save Dashboard (HTML)
+          </Button>
+          
+          <Button onClick={handleSaveProject} className="w-full" variant="outline">
             <Download className="h-4 w-4 mr-2" />
-            Save Project
+            Save Project (JSON)
           </Button>
           
           <div className="space-y-2">
