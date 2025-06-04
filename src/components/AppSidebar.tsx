@@ -1,16 +1,5 @@
 
 import React from "react";
-import { 
-  BarChart3, 
-  PieChart, 
-  LineChart, 
-  TrendingUp, 
-  Map, 
-  Upload,
-  Download,
-  Share2,
-  Settings
-} from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -22,47 +11,62 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { 
+  BarChart3, 
+  PieChart, 
+  LineChart, 
+  TrendingUp, 
+  Upload,
+  Settings,
+  Home
+} from "lucide-react";
 
-const navigationItems = [
-  { title: "Upload Data", icon: Upload, id: "upload" },
-  { title: "Bar Charts", icon: BarChart3, id: "bar-charts" },
-  { title: "Pie Charts", icon: PieChart, id: "pie-charts" },
-  { title: "Line Charts", icon: LineChart, id: "line-charts" },
-  { title: "KPI Indicators", icon: TrendingUp, id: "kpi" },
-  { title: "Maps", icon: Map, id: "maps" },
-  { title: "Export", icon: Download, id: "export" },
-  { title: "Share", icon: Share2, id: "share" },
+const menuItems = [
+  {
+    title: "Dashboard",
+    icon: Home,
+    url: "#dashboard"
+  },
+  {
+    title: "Charts",
+    icon: BarChart3,
+    url: "#charts"
+  },
+  {
+    title: "Analytics",
+    icon: TrendingUp,
+    url: "#analytics"
+  },
+  {
+    title: "Upload Data",
+    icon: Upload,
+    url: "#upload"
+  },
+  {
+    title: "Settings",
+    icon: Settings,
+    url: "#settings"
+  }
 ];
 
-interface AppSidebarProps {
-  activeSection?: string;
-  onSectionChange?: (section: string) => void;
-}
-
-export function AppSidebar({ activeSection = "upload", onSectionChange }: AppSidebarProps) {
-  const { collapsed } = useSidebar();
+export function AppSidebar() {
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
 
   return (
-    <Sidebar className={collapsed ? "w-14" : "w-64"} collapsible>
-      <SidebarContent className="bg-white border-r">
+    <Sidebar collapsible="icon">
+      <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-lg font-semibold text-gray-900 mb-4">
-            {!collapsed && "Analytics Dashboard"}
+          <SidebarGroupLabel className="text-sm font-semibold text-gray-700">
+            Analytics Dashboard
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.id}>
-                  <SidebarMenuButton
-                    onClick={() => onSectionChange?.(item.id)}
-                    className={`w-full justify-start px-3 py-2 rounded-lg transition-colors ${
-                      activeSection === item.id 
-                        ? "bg-blue-100 text-blue-700 font-medium" 
-                        : "hover:bg-gray-100 text-gray-700"
-                    }`}
-                  >
-                    <item.icon className="h-5 w-5" />
-                    {!collapsed && <span className="ml-3">{item.title}</span>}
+              {menuItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton>
+                    <item.icon className="h-4 w-4" />
+                    {!isCollapsed && <span>{item.title}</span>}
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
